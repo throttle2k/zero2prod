@@ -1,3 +1,6 @@
-fn main() {
-    println!("Hello, world!");
+use zero2prod::run;
+
+#[tokio::main]
+async fn main() -> std::io::Result<()> {
+    run(tokio::net::TcpListener::bind("127.0.0.1:3000").await?).await
 }
