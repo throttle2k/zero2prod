@@ -32,6 +32,8 @@
         cargo-tarpaulin
         cargo-audit
         clang
+        sqlx-cli
+        postgresql
       ];
       RUST_SRC_PATH="${rust-bin.stable.latest.rust-src}/lib/rustlib/src/rust/library/";
     };
