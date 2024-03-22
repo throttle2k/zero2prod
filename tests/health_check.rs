@@ -1,7 +1,7 @@
 async fn spawn_app() -> Result<String, std::io::Error> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr().unwrap().port();
-    let server = zero2prod::run(listener);
+    let server = zero2prod::startup::run(listener);
     tokio::spawn(server);
     Ok(format!("http://127.0.0.1:{}", port))
 }
