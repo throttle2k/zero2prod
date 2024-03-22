@@ -1,24 +1,10 @@
+mod routes;
+
 use axum::{
-    extract::Form,
-    response::Response,
     routing::{get, post},
     Router,
 };
-
-#[allow(dead_code)]
-#[derive(serde::Deserialize)]
-struct FormData {
-    name: String,
-    email: String,
-}
-
-async fn health_check() -> Response {
-    Response::default()
-}
-
-async fn subscribe(Form(_form): Form<FormData>) -> Response {
-    Response::default()
-}
+use routes::*;
 
 pub fn app() -> Router {
     Router::new()
