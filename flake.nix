@@ -1,41 +1,45 @@
 {
   description = "Rust development environment";
 
-  # Flake inputs
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    rust-overlay.url = "github:oxalica/rust-overlay";
+    fenix-rust = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  # Flake outputs
-  outputs = { self, nixpkgs, rust-overlay }:
+  outputs = { self, nixpkgs, fenix-rust }:
   let
-    overlays = [
-      (import rust-overlay)
-    ];
     system = "x86_64-linux";
     pkgs = import nixpkgs { 
-      inherit overlays system; 
+      inherit system;
+      overlays = [ fenix-rust.overlays.default ];
     };
+    rustPkg = pkgs.fenix.stable.withComponents [
+     "cargo"
+     "clippy"
+     "rust-src"
+     "rustc"
+     "rustfmt"
+    ];
   in
-  with pkgs;
   {
-    devShells.${system}.default = mkShell {
-      buildInputs = [
-        rust-bin.stable.latest.default
-        rust-bin.stable.latest.rust-src
-        rust-analyzer
+    devShells.${system}.default = pkgs.mkShell {
+      buildInputs = with pkgs; [
+        rustPkg
+        rust-analyzer-nightly
         llvmPackages.bintools
         pkg-config
         openssl
         cargo-watch
         cargo-tarpaulin
         cargo-audit
+        cargo-udeps
         clang
         sqlx-cli
         postgresql
       ];
-      RUST_SRC_PATH="${rust-bin.stable.latest.rust-src}/lib/rustlib/src/rust/library/";
     };
   };
 }
