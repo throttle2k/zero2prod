@@ -1,5 +1,5 @@
-use axum::response::Response;
+use axum::http::StatusCode;
 
-pub async fn health_check() -> Response {
-    Response::default()
+pub async fn health_check() -> Result<(), StatusCode> {
+    Ok(())
 }
