@@ -7,7 +7,6 @@ use axum_macros::debug_handler;
 use chrono::Utc;
 use uuid::Uuid;
 
-#[allow(dead_code)]
 #[derive(serde::Deserialize)]
 pub struct FormData {
     name: String,
