@@ -1,18 +1,37 @@
-use sqlx::PgPool;
-use zero2prod::configuration::get_configuration;
+use sqlx::{Connection, Executor, PgConnection, PgPool};
+use uuid::Uuid;
+use zero2prod::configuration::{get_configuration, DatabaseSettings};
 
 pub struct TestApp {
     pub address: String,
     pub db_pool: PgPool,
 }
 
+pub async fn configure_database(config: &DatabaseSettings) -> PgPool {
+    let mut connection = PgConnection::connect(&config.connection_string_without_db())
+        .await
+        .expect("A connection pool to Postgres should be instatiated");
+    connection
+        .execute(format!(r#"CREATE DATABASE "{}";"#, config.database_name).as_str())
+        .await
+        .expect("A new database should be instantiated");
+    let db_pool = PgPool::connect(&config.connection_string())
+        .await
+        .expect("A database connection pool should be available");
+    sqlx::migrate!("./migrations")
+        .run(&db_pool)
+        .await
+        .expect("Database shouldbe migrated");
+    db_pool
+}
+
 async fn spawn_app() -> Result<TestApp, std::io::Error> {
     let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
     let port = listener.local_addr().unwrap().port();
-    let configuration = get_configuration().expect("A configuration file should be present");
-    let db_pool = PgPool::connect(&configuration.database.connection_string())
-        .await
-        .expect("A connection pool to Postgres should be instatiated");
+    let mut configuration = get_configuration().expect("A configuration file should be present");
+    configuration.database.database_name = Uuid::new_v4().to_string();
+
+    let db_pool = configure_database(&configuration.database).await;
     let server = zero2prod::startup::run(listener, db_pool.clone());
     tokio::spawn(server);
     Ok(TestApp {
