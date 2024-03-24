@@ -1,0 +1,13 @@
+.env
+.envrc
+.flake.lock
+.flake.nix
+.git/
+.gitignore
+.github/
+README.md
+target/
+tests/
+Dockerfile
+scripts/
+migrations/
