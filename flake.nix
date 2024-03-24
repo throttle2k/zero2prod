@@ -39,6 +39,7 @@
         clang
         sqlx-cli
         postgresql
+        flyctl
       ];
     };
   };
