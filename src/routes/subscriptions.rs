@@ -5,7 +5,7 @@ use axum::{
 };
 use axum_macros::debug_handler;
 use chrono::Utc;
-use tracing::Instrument;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(serde::Deserialize)]
@@ -15,21 +15,27 @@ pub struct FormData {
 }
 
 #[debug_handler]
+#[tracing::instrument(
+    name = "Adding a new subscriber",
+    skip(form, state),
+    fields(
+        subscriber_email = %form.email,
+        subscriber_name = %form.name
+    )
+)]
 pub async fn subscribe(
     State(state): State<AppState>,
     Form(form): Form<FormData>,
 ) -> Result<(), StatusCode> {
-    let request_id = Uuid::new_v4();
-    let request_span = tracing::info_span!(
-        "Adding a new subscriber",
-        %request_id,
-        subscriber_email = %form.email,
-        subscriber_name = %form.name
-    );
-    let _request_span_enter = request_span.enter();
-    let query_span = tracing::info_span!("Saving new subscriber details in the database");
+    match insert_subscriber(&state.db_pool, &form).await {
+        Ok(_) => Ok(()),
+        Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
+    }
+}
 
-    match sqlx::query!(
+#[tracing::instrument(name = "Saving new subscriber in the database", skip(form, db_pool))]
+pub async fn insert_subscriber(db_pool: &PgPool, form: &FormData) -> Result<(), sqlx::Error> {
+    sqlx::query!(
         r#"
         INSERT INTO subscriptions (id, email, name, subscribed_at)
         VALUES ($1, $2, $3, $4)
@@ -39,24 +45,11 @@ pub async fn subscribe(
         form.name,
         Utc::now()
     )
-    .execute(&state.db_pool)
-    .instrument(query_span)
+    .execute(db_pool)
     .await
-    {
-        Ok(_) => {
-            tracing::info!(
-                "request_id {} - New subscriber details have been saved",
-                request_id
-            );
-            Ok(())
-        }
-        Err(e) => {
-            tracing::error!(
-                "request_id {} - Failed to execute query: {:?}",
-                request_id,
-                e
-            );
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        }
-    }
+    .map_err(|e| {
+        tracing::error!("Failed to execute query: {:?}", e);
+        e
+    })?;
+    Ok(())
 }
