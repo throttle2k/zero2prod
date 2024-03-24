@@ -12,6 +12,9 @@ async fn main() -> std::io::Result<()> {
     let configuration = get_configuration().expect("A configuration file should be present");
     let db_pool = PgPool::connect_lazy(configuration.database.connection_string().expose_secret())
         .expect("A connection pool to Postgres should be instatiated");
-    let address = format!("127.0.0.1:{}", configuration.application_port);
+    let address = format!(
+        "{}:{}",
+        configuration.application.host, configuration.application.port
+    );
     run(tokio::net::TcpListener::bind(address).await?, db_pool).await
 }
