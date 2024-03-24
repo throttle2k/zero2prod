@@ -38,7 +38,11 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
     config::Config::builder()
         .add_source(File::from(config_path.join("default")).required(true))
         .add_source(File::from(config_path.join(app_env.as_str())).required(true))
-        .add_source(config::Environment::with_prefix("app").separator("__"))
+        .add_source(
+            config::Environment::with_prefix("app")
+                .prefix_separator("_")
+                .separator("__"),
+        )
         .build()?
         .try_deserialize()
 }
