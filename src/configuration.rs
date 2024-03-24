@@ -45,6 +45,14 @@ pub fn get_configuration() -> Result<Settings, config::ConfigError> {
 
 impl DatabaseSettings {
     pub fn with_db(&self) -> PgConnectOptions {
+        tracing::info!(
+            "{}:{}@{}:{}/{}",
+            &self.username,
+            &self.password.expose_secret(),
+            &self.host,
+            &self.port,
+            &self.database_name
+        );
         self.without_db()
             .database(&self.database_name)
             .log_statements(tracing::log::LevelFilter::Trace)
