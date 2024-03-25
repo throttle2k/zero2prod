@@ -18,4 +18,4 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy
-        run: flyctl deploy
+        run: flyctl deploy --remote-only
