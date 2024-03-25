@@ -17,6 +17,16 @@ pub struct FormData {
     email: String,
 }
 
+impl TryFrom<FormData> for NewSubscriber {
+    type Error = String;
+
+    fn try_from(form: FormData) -> Result<Self, Self::Error> {
+        let name = SubscriberName::parse(form.name)?;
+        let email = SubscriberEmail::parse(form.email)?;
+        Ok(Self { name, email })
+    }
+}
+
 #[debug_handler]
 #[tracing::instrument(
     name = "Adding a new subscriber",
@@ -30,16 +40,11 @@ pub async fn subscribe(
     State(state): State<AppState>,
     Form(form): Form<FormData>,
 ) -> Result<(), StatusCode> {
-    let name = match SubscriberName::parse(form.name) {
-        Ok(name) => name,
-        Err(_) => return Err(StatusCode::BAD_REQUEST),
-    };
-    let email = match SubscriberEmail::parse(form.email) {
-        Ok(email) => email,
+    let new_subscriber = match form.try_into() {
+        Ok(form) => form,
         Err(_) => return Err(StatusCode::BAD_REQUEST),
     };
 
-    let new_subscriber = NewSubscriber { email, name };
     match insert_subscriber(&state.db_pool, &new_subscriber).await {
         Ok(_) => Ok(()),
         Err(_) => Err(StatusCode::INTERNAL_SERVER_ERROR),
